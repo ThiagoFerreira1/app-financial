@@ -1,0 +1,29 @@
+# Dependências
+node_modules/
+
+# Build
+dist/
+*.tsbuildinfo
+
+# Variáveis de ambiente (NUNCA versionar)
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor
+.vscode/
+.idea/
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+
+# Testes / coverage
+coverage/
+
+# Drizzle (migrations geradas ficam versionadas, mas o cache local não)
+drizzle/.cache/
