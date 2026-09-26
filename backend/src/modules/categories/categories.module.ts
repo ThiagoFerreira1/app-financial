@@ -9,5 +9,6 @@ import { CategoriesService } from './service/categories.service.js';
   imports: [DrizzleModule, CommonModule],
   controllers: [CategoriesController],
   providers: [CategoriesService, CategoriesRepository],
+  exports: [CategoriesRepository],
 })
 export class CategoriesModule {}

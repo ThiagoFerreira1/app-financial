@@ -1,0 +1,215 @@
+@baseUrl = http://localhost:3000/v1
+
+### Login (necessário para pegar o accessToken usado abaixo)
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "usuario@example.com",
+  "password": "senha123"
+}
+
+### Criar categoria de apoio (recurrence exige category_id de uma categoria própria)
+# @name createCategory
+POST {{baseUrl}}/categories
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+{
+  "name": "Moradia"
+}
+
+### Create
+# @name createRecurrence
+POST {{baseUrl}}/recurrences
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+{
+  "description": "Aluguel",
+  "categoryId": "{{createCategory.response.body.$.data.id}}",
+  "type": "despesa",
+  "defaultAmount": 150000,
+  "dueDay": 5
+}
+
+### Create - categoryId inexistente/de outro usuário (404 esperado)
+POST {{baseUrl}}/recurrences
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+{
+  "description": "Qualquer",
+  "categoryId": "00000000-0000-0000-0000-000000000000",
+  "type": "despesa",
+  "defaultAmount": 1000,
+  "dueDay": 5
+}
+
+### Create - defaultAmount inválido (400 esperado, deve ser > 0)
+POST {{baseUrl}}/recurrences
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+{
+  "description": "Qualquer",
+  "categoryId": "{{createCategory.response.body.$.data.id}}",
+  "type": "despesa",
+  "defaultAmount": 0,
+  "dueDay": 5
+}
+
+### Create - dueDay fora do intervalo 1-31 (400 esperado)
+POST {{baseUrl}}/recurrences
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+{
+  "description": "Qualquer",
+  "categoryId": "{{createCategory.response.body.$.data.id}}",
+  "type": "despesa",
+  "defaultAmount": 1000,
+  "dueDay": 32
+}
+
+### Create - parcelada (installmentsTotal)
+# @name createInstallmentRecurrence
+POST {{baseUrl}}/recurrences
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+{
+  "description": "TV Samsung",
+  "categoryId": "{{createCategory.response.body.$.data.id}}",
+  "type": "despesa",
+  "defaultAmount": 45000,
+  "dueDay": 10,
+  "installmentsTotal": 12
+}
+
+### Create - installmentsTotal inválido (400 esperado, deve ser >= 1)
+POST {{baseUrl}}/recurrences
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+{
+  "description": "Qualquer",
+  "categoryId": "{{createCategory.response.body.$.data.id}}",
+  "type": "despesa",
+  "defaultAmount": 1000,
+  "dueDay": 5,
+  "installmentsTotal": 0
+}
+
+### Update - aumentar installmentsTotal (edição legítima, ex: corrigir de 12x para 15x)
+PATCH {{baseUrl}}/recurrences/{{createInstallmentRecurrence.response.body.$.data.id}}
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+{
+  "installmentsTotal": 15
+}
+
+### Update - installmentsTotal abaixo do já gerado (400 esperado)
+# Não dá pra reproduzir só com estes requests: installmentsGenerated só é
+# incrementado pelo futuro módulo monthly-entries. Pra testar manualmente,
+# rode antes: UPDATE recurrences SET installments_generated = 5 WHERE id = '...';
+# e então tente um installmentsTotal menor que 5 abaixo.
+PATCH {{baseUrl}}/recurrences/{{createInstallmentRecurrence.response.body.$.data.id}}
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+{
+  "installmentsTotal": 3
+}
+
+### List - sem filtro (default: só ativas)
+GET {{baseUrl}}/recurrences
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+### List - active=false (mostra as pausadas)
+GET {{baseUrl}}/recurrences?active=false
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+### List - filtrando por categoryId
+GET {{baseUrl}}/recurrences?categoryId={{createCategory.response.body.$.data.id}}
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+### Update - pausar (active: false)
+PATCH {{baseUrl}}/recurrences/{{createRecurrence.response.body.$.data.id}}
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+{
+  "active": false
+}
+
+### Update - reativar (active: true)
+PATCH {{baseUrl}}/recurrences/{{createRecurrence.response.body.$.data.id}}
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+{
+  "active": true
+}
+
+### Update - categoryId inexistente/de outro usuário (404 esperado)
+PATCH {{baseUrl}}/recurrences/{{createRecurrence.response.body.$.data.id}}
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+{
+  "categoryId": "00000000-0000-0000-0000-000000000000"
+}
+
+### Delete
+DELETE {{baseUrl}}/recurrences/{{createRecurrence.response.body.$.data.id}}
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+### Update - recorrência já removida (404 esperado)
+PATCH {{baseUrl}}/recurrences/{{createRecurrence.response.body.$.data.id}}
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+{
+  "description": "Qualquer"
+}
+
+### Delete - recorrência já removida (404 esperado)
+DELETE {{baseUrl}}/recurrences/{{createRecurrence.response.body.$.data.id}}
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+### Register um segundo usuário (para testar isolamento entre usuários abaixo)
+# @name loginOtherUser
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "outro-usuario@example.com",
+  "password": "senha123"
+}
+
+### Update - recorrência de outro usuário (404 esperado)
+PATCH {{baseUrl}}/recurrences/{{createRecurrence.response.body.$.data.id}}
+Content-Type: application/json
+Authorization: Bearer {{loginOtherUser.response.body.$.data.accessToken}}
+
+{
+  "description": "Roubada"
+}
+
+### Delete - recorrência de outro usuário (404 esperado)
+DELETE {{baseUrl}}/recurrences/{{createRecurrence.response.body.$.data.id}}
+Authorization: Bearer {{loginOtherUser.response.body.$.data.accessToken}}
+
+### Create - sem token (401 esperado)
+POST {{baseUrl}}/recurrences
+Content-Type: application/json
+
+{
+  "description": "SemToken"
+}
+
+### List - sem token (401 esperado)
+GET {{baseUrl}}/recurrences

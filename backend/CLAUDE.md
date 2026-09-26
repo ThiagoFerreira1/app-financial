@@ -178,6 +178,17 @@ Um `monthly_entry` sem `recurrence_id` pode ter `type`, `amount`,
 - Soft delete em `categories` e `recurrences` (campo `deleted_at` — nunca
   excluir de verdade, mantém histórico e integridade referencial)
 - Timestamps `created_at` / `updated_at` em todas as tabelas
+- Campos `type` (`text`, valores fixos `'despesa' | 'receita'` em
+  `recurrences`, `monthly_entries`, `transactions`): **não criar uma tabela
+  de tipos com FK** — é um domínio fixo de 2 valores, não dado dinâmico do
+  usuário (diferente de `categories`); uma tabela geraria JOIN permanente
+  nas tabelas mais lidas do sistema sem ganho real de integridade. Em vez
+  disso, adicionar um `CHECK (type IN ('despesa', 'receita'))` na própria
+  coluna — hoje a validação desses valores existe só na camada de aplicação
+  (Zod), sem constraint no banco; isso é um gap pendente, ainda não aplicado
+  em `recurrences`. Ao criar `monthly_entries`/`transactions`, aplicar o
+  `CHECK` já na migration inicial dessas tabelas, e considerar retroagir em
+  `recurrences` no mesmo change.
 
 ### Modelagem das tabelas
 

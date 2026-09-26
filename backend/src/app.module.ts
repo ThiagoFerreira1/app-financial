@@ -4,6 +4,7 @@ import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { CategoriesModule } from './modules/categories/categories.module.js';
+import { RecurrencesModule } from './modules/recurrences/recurrences.module.js';
 import { validate } from './config/env.validation.js';
 
 @Module({
@@ -14,6 +15,7 @@ import { validate } from './config/env.validation.js';
     }),
     AuthModule,
     CategoriesModule,
+    RecurrencesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

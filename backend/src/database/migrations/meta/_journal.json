@@ -15,6 +15,20 @@
       "when": 1790384229480,
       "tag": "0001_redundant_ben_urich",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790387095441,
+      "tag": "0002_flimsy_jack_power",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790388733198,
+      "tag": "0003_handy_pete_wisdom",
+      "breakpoints": true
     }
   ]
 }
