@@ -29,6 +29,27 @@
       "when": 1790388733198,
       "tag": "0003_handy_pete_wisdom",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790423052755,
+      "tag": "0004_tiresome_reavers",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790426999999,
+      "tag": "0005_rename_paid_at_to_settled_at",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790428099617,
+      "tag": "0006_add_accounts_and_account_id",
+      "breakpoints": true
     }
   ]
 }

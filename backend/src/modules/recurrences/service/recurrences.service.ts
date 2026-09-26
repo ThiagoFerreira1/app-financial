@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { AccountsRepository } from '../../accounts/accounts.repository.js';
 import { CategoriesRepository } from '../../categories/categories.repository.js';
 import {
   RecurrencesRepository,
@@ -9,6 +10,7 @@ import type { CreateRecurrenceDto } from '../dto/create-recurrence.dto.js';
 import type { UpdateRecurrenceDto } from '../dto/update-recurrence.dto.js';
 
 const CATEGORY_NOT_FOUND_ERROR = 'Categoria não encontrada';
+const ACCOUNT_NOT_FOUND_ERROR = 'Conta não encontrada';
 const RECURRENCE_NOT_FOUND_ERROR = 'Recorrência não encontrada';
 const INSTALLMENTS_TOTAL_BELOW_GENERATED_ERROR =
   'installmentsTotal não pode ser menor que as parcelas já geradas';
@@ -18,14 +20,17 @@ export class RecurrencesService {
   constructor(
     private readonly recurrencesRepository: RecurrencesRepository,
     private readonly categoriesRepository: CategoriesRepository,
+    private readonly accountsRepository: AccountsRepository,
   ) {}
 
   async create(userId: string, dto: CreateRecurrenceDto): Promise<Recurrence> {
     await this.assertCategoryOwnership(dto.categoryId, userId);
+    await this.assertAccountOwnership(dto.accountId, userId);
 
     return this.recurrencesRepository.create({
       userId,
       categoryId: dto.categoryId,
+      accountId: dto.accountId,
       description: dto.description,
       type: dto.type,
       defaultAmount: dto.defaultAmount,
@@ -41,6 +46,7 @@ export class RecurrencesService {
     return this.recurrencesRepository.findAllByUser(userId, {
       active: filters.active ?? true,
       categoryId: filters.categoryId,
+      accountId: filters.accountId,
     });
   }
 
@@ -59,6 +65,10 @@ export class RecurrencesService {
 
     if (dto.categoryId) {
       await this.assertCategoryOwnership(dto.categoryId, userId);
+    }
+
+    if (dto.accountId) {
+      await this.assertAccountOwnership(dto.accountId, userId);
     }
 
     if (
@@ -93,6 +103,19 @@ export class RecurrencesService {
     );
     if (!category) {
       throw new NotFoundException(CATEGORY_NOT_FOUND_ERROR);
+    }
+  }
+
+  private async assertAccountOwnership(
+    accountId: string,
+    userId: string,
+  ): Promise<void> {
+    const account = await this.accountsRepository.findOwnedById(
+      accountId,
+      userId,
+    );
+    if (!account) {
+      throw new NotFoundException(ACCOUNT_NOT_FOUND_ERROR);
     }
   }
 }

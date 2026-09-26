@@ -20,6 +20,16 @@ Authorization: Bearer {{login.response.body.$.data.accessToken}}
   "name": "Moradia"
 }
 
+### Criar conta de apoio (recurrence exige account_id de uma conta própria)
+# @name createAccount
+POST {{baseUrl}}/accounts
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+{
+  "name": "Conta Corrente"
+}
+
 ### Create
 # @name createRecurrence
 POST {{baseUrl}}/recurrences
@@ -29,6 +39,7 @@ Authorization: Bearer {{login.response.body.$.data.accessToken}}
 {
   "description": "Aluguel",
   "categoryId": "{{createCategory.response.body.$.data.id}}",
+  "accountId": "{{createAccount.response.body.$.data.id}}",
   "type": "despesa",
   "defaultAmount": 150000,
   "dueDay": 5
@@ -42,6 +53,21 @@ Authorization: Bearer {{login.response.body.$.data.accessToken}}
 {
   "description": "Qualquer",
   "categoryId": "00000000-0000-0000-0000-000000000000",
+  "accountId": "{{createAccount.response.body.$.data.id}}",
+  "type": "despesa",
+  "defaultAmount": 1000,
+  "dueDay": 5
+}
+
+### Create - accountId inexistente/de outro usuário (404 esperado)
+POST {{baseUrl}}/recurrences
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+{
+  "description": "Qualquer",
+  "categoryId": "{{createCategory.response.body.$.data.id}}",
+  "accountId": "00000000-0000-0000-0000-000000000000",
   "type": "despesa",
   "defaultAmount": 1000,
   "dueDay": 5
@@ -55,6 +81,7 @@ Authorization: Bearer {{login.response.body.$.data.accessToken}}
 {
   "description": "Qualquer",
   "categoryId": "{{createCategory.response.body.$.data.id}}",
+  "accountId": "{{createAccount.response.body.$.data.id}}",
   "type": "despesa",
   "defaultAmount": 0,
   "dueDay": 5
@@ -68,6 +95,7 @@ Authorization: Bearer {{login.response.body.$.data.accessToken}}
 {
   "description": "Qualquer",
   "categoryId": "{{createCategory.response.body.$.data.id}}",
+  "accountId": "{{createAccount.response.body.$.data.id}}",
   "type": "despesa",
   "defaultAmount": 1000,
   "dueDay": 32
@@ -82,6 +110,7 @@ Authorization: Bearer {{login.response.body.$.data.accessToken}}
 {
   "description": "TV Samsung",
   "categoryId": "{{createCategory.response.body.$.data.id}}",
+  "accountId": "{{createAccount.response.body.$.data.id}}",
   "type": "despesa",
   "defaultAmount": 45000,
   "dueDay": 10,
@@ -96,6 +125,7 @@ Authorization: Bearer {{login.response.body.$.data.accessToken}}
 {
   "description": "Qualquer",
   "categoryId": "{{createCategory.response.body.$.data.id}}",
+  "accountId": "{{createAccount.response.body.$.data.id}}",
   "type": "despesa",
   "defaultAmount": 1000,
   "dueDay": 5,
@@ -136,6 +166,10 @@ Authorization: Bearer {{login.response.body.$.data.accessToken}}
 GET {{baseUrl}}/recurrences?categoryId={{createCategory.response.body.$.data.id}}
 Authorization: Bearer {{login.response.body.$.data.accessToken}}
 
+### List - filtrando por accountId
+GET {{baseUrl}}/recurrences?accountId={{createAccount.response.body.$.data.id}}
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
 ### Update - pausar (active: false)
 PATCH {{baseUrl}}/recurrences/{{createRecurrence.response.body.$.data.id}}
 Content-Type: application/json
@@ -161,6 +195,15 @@ Authorization: Bearer {{login.response.body.$.data.accessToken}}
 
 {
   "categoryId": "00000000-0000-0000-0000-000000000000"
+}
+
+### Update - accountId inexistente/de outro usuário (404 esperado)
+PATCH {{baseUrl}}/recurrences/{{createRecurrence.response.body.$.data.id}}
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+{
+  "accountId": "00000000-0000-0000-0000-000000000000"
 }
 
 ### Delete

@@ -1,0 +1,93 @@
+@baseUrl = http://localhost:3000/v1
+
+### Login
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "usuario@example.com",
+  "password": "senha123"
+}
+
+### Create - com saldo inicial explícito
+# @name createAccount
+POST {{baseUrl}}/accounts
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+{
+  "name": "Conta Corrente",
+  "initialBalance": 500000
+}
+
+### Create - sem saldo inicial (default 0)
+POST {{baseUrl}}/accounts
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+{
+  "name": "Carteira"
+}
+
+### Create - com saldo inicial negativo (aceito)
+POST {{baseUrl}}/accounts
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+{
+  "name": "Conta Estourada",
+  "initialBalance": -20000
+}
+
+### List - cada conta com currentBalance calculado
+GET {{baseUrl}}/accounts
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+### Update - editar nome e saldo inicial
+PATCH {{baseUrl}}/accounts/{{createAccount.response.body.$.data.id}}
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+{
+  "name": "Conta Corrente Nubank",
+  "initialBalance": 550000
+}
+
+### Delete
+DELETE {{baseUrl}}/accounts/{{createAccount.response.body.$.data.id}}
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+### Register um segundo usuário (para testar isolamento entre usuários abaixo)
+# @name loginOtherUser
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "outro-usuario@example.com",
+  "password": "senha123"
+}
+
+### Update - conta de outro usuário (404 esperado)
+PATCH {{baseUrl}}/accounts/{{createAccount.response.body.$.data.id}}
+Content-Type: application/json
+Authorization: Bearer {{loginOtherUser.response.body.$.data.accessToken}}
+
+{
+  "name": "Roubada"
+}
+
+### Delete - conta de outro usuário (404 esperado)
+DELETE {{baseUrl}}/accounts/{{createAccount.response.body.$.data.id}}
+Authorization: Bearer {{loginOtherUser.response.body.$.data.accessToken}}
+
+### Create - sem token (401 esperado)
+POST {{baseUrl}}/accounts
+Content-Type: application/json
+
+{
+  "name": "SemToken"
+}
+
+### List - sem token (401 esperado)
+GET {{baseUrl}}/accounts

@@ -1,0 +1,240 @@
+@baseUrl = http://localhost:3000/v1
+
+### Login
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "usuario@example.com",
+  "password": "senha123"
+}
+
+### Criar categoria de apoio
+# @name createCategory
+POST {{baseUrl}}/categories
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+{
+  "name": "Moradia"
+}
+
+### Criar conta de apoio
+# @name createAccount
+POST {{baseUrl}}/accounts
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+{
+  "name": "Conta Corrente"
+}
+
+### Criar recorrência de apoio (indefinida)
+# @name createRecurrence
+POST {{baseUrl}}/recurrences
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+{
+  "description": "Aluguel",
+  "categoryId": "{{createCategory.response.body.$.data.id}}",
+  "accountId": "{{createAccount.response.body.$.data.id}}",
+  "type": "despesa",
+  "defaultAmount": 150000,
+  "dueDay": 5
+}
+
+### List - mês atual (gera on-demand os lançamentos das recorrências elegíveis)
+GET {{baseUrl}}/monthly-entries?month=9&year=2026
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+### List - mês futuro (retorna prévia calculada, sem persistir nada, itens sem id)
+GET {{baseUrl}}/monthly-entries?month=12&year=2026
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+### Create - lançamento avulso
+# @name createEntry
+POST {{baseUrl}}/monthly-entries
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+{
+  "description": "Presente",
+  "categoryId": "{{createCategory.response.body.$.data.id}}",
+  "accountId": "{{createAccount.response.body.$.data.id}}",
+  "type": "despesa",
+  "amount": 5000,
+  "dueDate": "2026-09-20"
+}
+
+### Create - categoryId inexistente/de outro usuário (404 esperado)
+POST {{baseUrl}}/monthly-entries
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+{
+  "description": "Qualquer",
+  "categoryId": "00000000-0000-0000-0000-000000000000",
+  "accountId": "{{createAccount.response.body.$.data.id}}",
+  "type": "despesa",
+  "amount": 1000,
+  "dueDate": "2026-09-20"
+}
+
+### Create - accountId inexistente/de outro usuário (404 esperado)
+POST {{baseUrl}}/monthly-entries
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+{
+  "description": "Qualquer",
+  "categoryId": "{{createCategory.response.body.$.data.id}}",
+  "accountId": "00000000-0000-0000-0000-000000000000",
+  "type": "despesa",
+  "amount": 1000,
+  "dueDate": "2026-09-20"
+}
+
+### Update - editar avulso, incluindo type
+PATCH {{baseUrl}}/monthly-entries/{{createEntry.response.body.$.data.id}}
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+{
+  "type": "receita",
+  "amount": 6000
+}
+
+### Update - accountId inexistente/de outro usuário (404 esperado)
+PATCH {{baseUrl}}/monthly-entries/{{createEntry.response.body.$.data.id}}
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+{
+  "accountId": "00000000-0000-0000-0000-000000000000"
+}
+
+### Update - editar due_date pra fora do mês do lançamento (400 esperado)
+PATCH {{baseUrl}}/monthly-entries/{{createEntry.response.body.$.data.id}}
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+{
+  "dueDate": "2026-10-05"
+}
+
+### Settle - liquidar avulso (marca como pago/recebido conforme o type)
+# @name settleEntry
+POST {{baseUrl}}/monthly-entries/{{createEntry.response.body.$.data.id}}/settle
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+{}
+
+### Settle - com settledAt retroativo
+POST {{baseUrl}}/monthly-entries/{{createEntry.response.body.$.data.id}}/settle
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+{
+  "settledAt": "2026-09-15T10:00:00.000Z"
+}
+
+### Settle - já liquidado (409 esperado)
+POST {{baseUrl}}/monthly-entries/{{createEntry.response.body.$.data.id}}/settle
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+{}
+
+### Delete - avulso liquidado (409 esperado, desfaça a liquidação primeiro)
+DELETE {{baseUrl}}/monthly-entries/{{createEntry.response.body.$.data.id}}
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+### Unsettle - desfazer a liquidação
+POST {{baseUrl}}/monthly-entries/{{createEntry.response.body.$.data.id}}/unsettle
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+### Unsettle - já pendente (409 esperado)
+POST {{baseUrl}}/monthly-entries/{{createEntry.response.body.$.data.id}}/unsettle
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+### Delete - avulso não liquidado
+DELETE {{baseUrl}}/monthly-entries/{{createEntry.response.body.$.data.id}}
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+### List novamente para pegar o id do lançamento gerado pela recorrência "Aluguel"
+# @name listAfterGeneration
+GET {{baseUrl}}/monthly-entries?month=9&year=2026
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+### Update - editar type de lançamento vinculado a recorrência (400 esperado)
+PATCH {{baseUrl}}/monthly-entries/{{listAfterGeneration.response.body.$.data[0].id}}
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+{
+  "type": "receita"
+}
+
+### Delete - lançamento vinculado a recorrência (409 esperado, use skip)
+DELETE {{baseUrl}}/monthly-entries/{{listAfterGeneration.response.body.$.data[0].id}}
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+### Skip - pular o mês desse lançamento sem pausar a recorrência inteira
+POST {{baseUrl}}/monthly-entries/{{listAfterGeneration.response.body.$.data[0].id}}/skip
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+### Settle - tentar liquidar um pulado (409 esperado)
+POST {{baseUrl}}/monthly-entries/{{listAfterGeneration.response.body.$.data[0].id}}/settle
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+{}
+
+### Skip - pular o mesmo lançamento de novo, já pulado (409 esperado)
+POST {{baseUrl}}/monthly-entries/{{listAfterGeneration.response.body.$.data[0].id}}/skip
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+### Skip - tentar pular um avulso (400 esperado)
+POST {{baseUrl}}/monthly-entries/{{createEntry.response.body.$.data.id}}/skip
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+### Unskip - desfazer o skip
+POST {{baseUrl}}/monthly-entries/{{listAfterGeneration.response.body.$.data[0].id}}/unskip
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+### Unskip - desfazer skip de algo não pulado (409 esperado)
+POST {{baseUrl}}/monthly-entries/{{listAfterGeneration.response.body.$.data[0].id}}/unskip
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+### Register um segundo usuário (para testar isolamento entre usuários abaixo)
+# @name loginOtherUser
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "outro-usuario@example.com",
+  "password": "senha123"
+}
+
+### Update - lançamento de outro usuário (404 esperado)
+PATCH {{baseUrl}}/monthly-entries/{{listAfterGeneration.response.body.$.data[0].id}}
+Content-Type: application/json
+Authorization: Bearer {{loginOtherUser.response.body.$.data.accessToken}}
+
+{
+  "amount": 1
+}
+
+### Create - sem token (401 esperado)
+POST {{baseUrl}}/monthly-entries
+Content-Type: application/json
+
+{
+  "description": "SemToken"
+}
+
+### List - sem token (401 esperado)
+GET {{baseUrl}}/monthly-entries?month=9&year=2026

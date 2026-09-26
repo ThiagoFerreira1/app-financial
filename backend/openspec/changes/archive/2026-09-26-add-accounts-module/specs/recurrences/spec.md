@@ -1,9 +1,4 @@
-# recurrences Specification
-
-## Purpose
-Permitir que cada usuário cadastre templates de conta fixa/variável ou parcelada (recorrências) — nome, tipo, valor padrão, categoria, dia de vencimento e, opcionalmente, número de parcelas — que servirão de base para a geração automática dos lançamentos mensais, sem precisar recadastrar a mesma conta todo mês.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Recurrence Creation
 O sistema SHALL permitir que um usuário autenticado crie uma recorrência informando `description`, `type` (`'despesa'` ou `'receita'`), `default_amount`, `due_day`, `category_id`, `account_id` e, opcionalmente, `installments_total`, associando-a ao seu próprio `user_id`. O `category_id` informado SHALL pertencer a uma categoria não removida do próprio usuário. O `account_id` informado SHALL pertencer a uma conta não removida do próprio usuário. Quando `installments_total` não for informado, a recorrência SHALL ser criada como indefinida (sem número fixo de ocorrências).
@@ -23,32 +18,6 @@ O sistema SHALL permitir que um usuário autenticado crie uma recorrência infor
 #### Scenario: Creating with an account that does not belong to the user
 - **WHEN** um usuário autenticado tenta criar uma recorrência informando um `account_id` que não existe, pertence a outro usuário, ou está removido
 - **THEN** o sistema rejeita a requisição como se a conta não existisse, e nenhuma recorrência é criada
-
-### Requirement: Recurrence Field Validation
-O sistema SHALL exigir que `default_amount` seja um valor inteiro positivo (maior que zero), que `due_day` esteja entre 1 e 31, e que `installments_total`, quando informado, seja um inteiro positivo (maior ou igual a 1) — tudo tanto na criação quanto na edição.
-
-#### Scenario: Rejecting a non-positive default amount
-- **WHEN** um usuário autenticado tenta criar ou editar uma recorrência com `default_amount` igual a zero ou negativo
-- **THEN** o sistema rejeita a requisição com status 400 e nenhuma alteração é persistida
-
-#### Scenario: Rejecting an out-of-range due day
-- **WHEN** um usuário autenticado tenta criar ou editar uma recorrência com `due_day` menor que 1 ou maior que 31
-- **THEN** o sistema rejeita a requisição com status 400 e nenhuma alteração é persistida
-
-#### Scenario: Rejecting a non-positive installments_total
-- **WHEN** um usuário autenticado tenta criar ou editar uma recorrência com `installments_total` igual a zero ou negativo
-- **THEN** o sistema rejeita a requisição com status 400 e nenhuma alteração é persistida
-
-### Requirement: Recurrence Installment Plan
-O sistema SHALL manter `installments_generated` como um contador gerido internamente, nunca aceito como entrada do cliente em criação ou edição. O sistema SHALL rejeitar a edição de `installments_total` para um valor menor que o `installments_generated` atual da recorrência.
-
-#### Scenario: Client-provided installments_generated is ignored
-- **WHEN** um usuário autenticado envia `installments_generated` no corpo de uma requisição de criação ou edição
-- **THEN** o sistema ignora esse campo e mantém o valor gerido internamente, sem erro
-
-#### Scenario: Rejecting a reduction below installments already generated
-- **WHEN** um usuário autenticado tenta editar `installments_total` de uma recorrência para um valor menor que o `installments_generated` atual dela
-- **THEN** o sistema rejeita a requisição com status 400 e `installments_total` não é alterado
 
 ### Requirement: Recurrence Listing
 O sistema SHALL listar apenas as recorrências não removidas (`deleted_at` nulo) pertencentes ao usuário autenticado, retornando por padrão somente as ativas (`active` true). O sistema SHALL aceitar os parâmetros opcionais `active` (boolean), `categoryId` e `accountId` para refinar o filtro.
@@ -91,25 +60,3 @@ O sistema SHALL permitir que um usuário autenticado edite `description`, `categ
 #### Scenario: Editing an already-deleted recurrence
 - **WHEN** um usuário autenticado tenta editar uma recorrência própria já removida (`deleted_at` preenchido)
 - **THEN** o sistema rejeita a requisição como se a recorrência não existisse
-
-### Requirement: Recurrence Soft Delete
-O sistema SHALL remover logicamente uma recorrência própria preenchendo `deleted_at` e definindo `active` como `false` na mesma operação, nunca excluindo o registro fisicamente e nunca deixando uma recorrência removida marcada como ativa. O sistema SHALL NOT oferecer uma forma de reverter essa remoção.
-
-#### Scenario: Successful soft delete deactivates the recurrence
-- **WHEN** um usuário autenticado remove uma recorrência que lhe pertence e ainda não está removida
-- **THEN** o sistema preenche `deleted_at`, define `active` como `false`, e ela deixa de aparecer em listagens futuras, permanecendo no banco para preservar a integridade referencial de lançamentos que já a referenciam
-
-#### Scenario: Deleting a recurrence that does not belong to the user
-- **WHEN** um usuário autenticado tenta remover uma recorrência pertencente a outro usuário
-- **THEN** o sistema rejeita a requisição como se a recorrência não existisse
-
-#### Scenario: Deleting an already-deleted recurrence
-- **WHEN** um usuário autenticado tenta remover uma recorrência própria já removida
-- **THEN** o sistema rejeita a requisição como se a recorrência não existisse
-
-### Requirement: Recurrence Access Requires Authentication
-O sistema SHALL exigir um access token válido para criar, listar, editar ou remover recorrências.
-
-#### Scenario: Request without valid access token is rejected
-- **WHEN** uma requisição de criação, listagem, edição ou remoção de recorrência é feita sem um access token válido
-- **THEN** o sistema rejeita a requisição com status 401 e nenhuma recorrência é criada, alterada ou removida

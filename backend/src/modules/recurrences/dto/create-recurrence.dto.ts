@@ -3,6 +3,7 @@ import { z } from 'zod';
 export const createRecurrenceSchema = z.object({
   description: z.string().min(1),
   categoryId: z.string().uuid(),
+  accountId: z.string().uuid(),
   type: z.enum(['despesa', 'receita']),
   defaultAmount: z.number().int().positive(),
   dueDay: z.number().int().min(1).max(31),

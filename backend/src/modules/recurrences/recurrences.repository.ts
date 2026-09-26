@@ -1,6 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, eq, isNull } from 'drizzle-orm';
-import { DRIZZLE, type DrizzleClient } from '../../database/drizzle.module.js';
+import { and, eq, isNull, lt } from 'drizzle-orm';
+import {
+  DRIZZLE,
+  type DrizzleClient,
+  type DrizzleExecutor,
+} from '../../database/drizzle.module.js';
 import {
   recurrences,
   type NewRecurrence,
@@ -10,6 +14,7 @@ import {
 export interface RecurrenceFilters {
   active?: boolean;
   categoryId?: string;
+  accountId?: string;
 }
 
 @Injectable()
@@ -38,6 +43,9 @@ export class RecurrencesRepository {
     if (filters.categoryId) {
       conditions.push(eq(recurrences.categoryId, filters.categoryId));
     }
+    if (filters.accountId) {
+      conditions.push(eq(recurrences.accountId, filters.accountId));
+    }
 
     return this.db
       .select()
@@ -63,11 +71,29 @@ export class RecurrencesRepository {
     return recurrence;
   }
 
+  async findEligibleForPeriod(
+    userId: string,
+    periodEnd: Date,
+  ): Promise<Recurrence[]> {
+    return this.db
+      .select()
+      .from(recurrences)
+      .where(
+        and(
+          eq(recurrences.userId, userId),
+          eq(recurrences.active, true),
+          isNull(recurrences.deletedAt),
+          lt(recurrences.createdAt, periodEnd),
+        ),
+      );
+  }
+
   async update(
     id: string,
     data: Partial<NewRecurrence>,
+    executor: DrizzleExecutor = this.db,
   ): Promise<Recurrence> {
-    const [recurrence] = await this.db
+    const [recurrence] = await executor
       .update(recurrences)
       .set({ ...data, updatedAt: new Date() })
       .where(eq(recurrences.id, id))

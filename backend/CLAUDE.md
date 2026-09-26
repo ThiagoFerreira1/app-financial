@@ -37,7 +37,10 @@ Este repositório é parte de um monorepo: `backend/` (este projeto, API) +
 - Código (arquivos, classes, funções, variáveis): **inglês**
 - Termos de domínio/negócio (valores de enum, mensagens ao usuário):
   **português** — ex: campo `type` aceita `'despesa' | 'receita'`, campo
-  `status` aceita `'pendente' | 'pago'`
+  `status` aceita `'pendente' | 'liquidado' | 'pulado'` (nunca termos
+  específicos de despesa ou receita como "pago"/"recebido" — `liquidado` vale
+  pros dois, já que um lançamento pode ser tanto uma despesa quanto uma
+  receita)
 
 ---
 
@@ -123,7 +126,8 @@ push, exportação, biometria.
 ### 5.2 Regras de negócio
 
 **Status "atrasado" é sempre derivado, nunca persistido.**
-O campo `status` no banco só aceita `'pendente' | 'pago'`. "Atrasado" é
+O campo `status` no banco só aceita `'pendente' | 'liquidado' | 'pulado'`.
+"Atrasado" é
 calculado em tempo de leitura:
 ```
 atrasado = (status === 'pendente') && (due_date < hoje)
@@ -155,9 +159,9 @@ desativação não são apagados automaticamente.
 
 **Sincronização entre `monthly_entries` e `transactions`.**
 Regra mais sensível do sistema — sempre implementar com `db.transaction()`:
-- *Marcar como pago*: cria um registro em `transactions` com os dados do
-  `monthly_entry`, preenche `monthly_entries.transaction_id` e
-  `status = 'pago'`
+- *Marcar como liquidado* (pago ou recebido, conforme o `type`): cria um
+  registro em `transactions` com os dados do `monthly_entry`, preenche
+  `monthly_entries.transaction_id` e `status = 'liquidado'`
 - *Desmarcar*: apaga o `transaction` vinculado, limpa `transaction_id`, volta
   `status = 'pendente'`
 - *Edição sincronizada*: editar o valor por um dos dois lados atualiza o
@@ -209,34 +213,37 @@ deleted_at  timestamp, nullable
 created_at, updated_at
 ```
 
-**`recurrences`** — template de conta fixa/variável
+**`recurrences`** — template de conta fixa/variável ou parcelada
 ```
-id             uuid, pk
-user_id        uuid, fk -> users
-category_id    uuid, fk -> categories
-description    text
-type           text  -- 'despesa' | 'receita'
-default_amount integer  -- centavos
-due_day        integer  -- dia do mês (1-31)
-active         boolean, default true
-deleted_at     timestamp, nullable
+id                      uuid, pk
+user_id                 uuid, fk -> users
+category_id             uuid, fk -> categories
+description             text
+type                    text  -- 'despesa' | 'receita'
+default_amount          integer  -- centavos
+due_day                 integer  -- dia do mês (1-31)
+active                  boolean, default true
+installments_total      integer, nullable  -- null = recorrência indefinida
+installments_generated  integer, default 0 -- contador interno, nunca editável via API
+deleted_at              timestamp, nullable
 created_at, updated_at
 ```
 
 **`monthly_entries`** — instância mensal (planejada/pendente)
 ```
-id              uuid, pk
-user_id         uuid, fk -> users
-recurrence_id   uuid, fk -> recurrences, nullable  -- null = avulso
-category_id     uuid, fk -> categories
-transaction_id  uuid, fk -> transactions, nullable -- preenchido quando pago
-description     text
-type            text  -- 'despesa' | 'receita'
-amount          integer  -- centavos (pode divergir do default_amount)
-due_date        date
-status          text  -- 'pendente' | 'pago' (nunca 'atrasado', ver 5.2)
-month           integer  -- 1-12
-year            integer
+id                  uuid, pk
+user_id             uuid, fk -> users
+recurrence_id       uuid, fk -> recurrences, nullable  -- null = avulso
+category_id         uuid, fk -> categories
+transaction_id      uuid, fk -> transactions, nullable -- preenchido quando liquidado
+description         text
+type                text  -- 'despesa' | 'receita'
+amount              integer  -- centavos (pode divergir do default_amount)
+due_date            date
+status              text  -- 'pendente' | 'liquidado' | 'pulado' (nunca 'atrasado', ver 5.2)
+month               integer  -- 1-12
+year                integer
+installment_number  integer, nullable  -- snapshot da parcela no momento da geração
 created_at, updated_at
 ```
 
@@ -248,7 +255,7 @@ category_id    uuid, fk -> categories
 description    text
 type           text  -- 'despesa' | 'receita'
 amount         integer  -- centavos
-paid_at        timestamp
+settled_at     timestamp  -- quando foi de fato pago ou recebido
 created_at, updated_at
 ```
 

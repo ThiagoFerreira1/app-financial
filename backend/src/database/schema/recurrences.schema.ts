@@ -1,4 +1,5 @@
 import { boolean, integer, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { accounts } from './accounts.schema.js';
 import { categories } from './categories.schema.js';
 import { users } from './users.schema.js';
 
@@ -10,6 +11,9 @@ export const recurrences = pgTable('recurrences', {
   categoryId: uuid('category_id')
     .notNull()
     .references(() => categories.id),
+  accountId: uuid('account_id')
+    .notNull()
+    .references(() => accounts.id),
   description: text('description').notNull(),
   type: text('type').notNull().$type<'despesa' | 'receita'>(),
   defaultAmount: integer('default_amount').notNull(),
