@@ -1,18 +1,11 @@
-import {
-Body,
-  Controller,
-  HttpCode,
-  HttpStatus,
-  Post,
-  UseGuards,
-} from '@nestjs/common';
-import { CurrentUser } from '../common/decorators/current-user.decorator.js';
-import { JwtAuthGuard } from '../common/guards/jwt-auth.guard.js';
-import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe.js';
-import { AuthService, type TokenPair } from './auth.service.js';
-import { loginSchema, type LoginDto } from './dto/login.dto.js';
-import { refreshSchema, type RefreshDto } from './dto/refresh.dto.js';
-import { registerSchema, type RegisterDto } from './dto/register.dto.js';
+import { Body, Controller, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
+import { CurrentUser } from '../../../common/decorators/current-user.decorator.js';
+import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard.js';
+import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe.js';
+import { AuthService, type TokenPair } from '../service/auth.service.js';
+import { loginSchema, type LoginDto } from '../dto/login.dto.js';
+import { refreshSchema, type RefreshDto } from '../dto/refresh.dto.js';
+import { registerSchema, type RegisterDto } from '../dto/register.dto.js';
 
 @Controller('auth')
 export class AuthController {

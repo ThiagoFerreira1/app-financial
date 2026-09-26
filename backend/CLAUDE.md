@@ -87,6 +87,21 @@ padrão nativo do Nest:
 Cada módulo de domínio (`categories`, `recurrences`, `monthly-entries`) segue
 sempre o trio `controller` + `service` + `repository` + pasta `dto/`.
 
+Dentro de cada módulo, `controller` e `service` ficam em subpastas próprias
+(`controller/` e `service/`); `repository` e `dto/` ficam soltos na raiz do
+módulo:
+
+```
+modules/<nome>/
+  controller/
+    <nome>.controller.ts
+  service/
+    <nome>.service.ts
+  <nome>.repository.ts
+  <nome>.module.ts
+  dto/
+```
+
 ---
 
 ## 5. Escopo
@@ -271,6 +286,17 @@ do schema de banco, evitando duplicação de tipos.
   invalidação no logout e detecção de reuso indevido (rotation)
 - Nunca colocar dados sensíveis no payload do JWT
 
+### Exemplos de requisições (`.http`)
+
+Cada módulo com controller tem um arquivo `http/<modulo>.http` (formato REST
+Client) com exemplo de cada endpoint, incluindo os principais cenários de
+erro (ex: email duplicado, credenciais inválidas, token expirado/reutilizado).
+
+**Toda vez que um endpoint novo for criado ou um existente for alterado
+(rota, payload ou resposta), o arquivo `.http` correspondente deve ser
+criado/atualizado no mesmo commit/change.** Não é opcional — é a forma
+principal de testar manualmente a API neste projeto.
+
 ### Testes
 
 Não gerar testes automaticamente por enquanto — prioridade é ter as
@@ -292,28 +318,41 @@ funcionalidades rodando primeiro. Entram numa fase posterior, sob pedido.
 ```
 backend/
   src/
-    auth/
-      auth.controller.ts
-      auth.service.ts
-      dto/
-      strategies/          # JWT strategy
-    categories/
-      categories.controller.ts
-      categories.service.ts
-      categories.repository.ts
-      dto/
-    recurrences/
-      recurrences.controller.ts
-      recurrences.service.ts
-      recurrences.repository.ts
-      dto/
-    monthly-entries/
-      monthly-entries.controller.ts
-      monthly-entries.service.ts   # geração on-demand + sync c/ transactions
-      monthly-entries.repository.ts
-      dto/
-    transactions/
-      transactions.repository.ts   # sem controller próprio por ora
+    modules/
+      auth/
+        controller/
+          auth.controller.ts
+        service/
+          auth.service.ts
+        auth.repository.ts
+        auth.module.ts
+        dto/
+      categories/
+        controller/
+          categories.controller.ts
+        service/
+          categories.service.ts
+        categories.repository.ts
+        categories.module.ts
+        dto/
+      recurrences/
+        controller/
+          recurrences.controller.ts
+        service/
+          recurrences.service.ts
+        recurrences.repository.ts
+        recurrences.module.ts
+        dto/
+      monthly-entries/
+        controller/
+          monthly-entries.controller.ts
+        service/
+          monthly-entries.service.ts # geração on-demand + sync c/ transactions
+        monthly-entries.repository.ts
+        monthly-entries.module.ts
+        dto/
+      transactions/
+        transactions.repository.ts   # sem controller próprio por ora
     database/
       schema/
         users.schema.ts
@@ -330,6 +369,8 @@ backend/
     config/
       env.validation.ts
     main.ts                # prefixo global /v1 configurado aqui
+  http/                     # exemplos de requisição (.http), um arquivo por módulo
+    auth.http
   .env                      # não versionado
   .env.example
   package.json

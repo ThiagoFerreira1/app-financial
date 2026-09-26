@@ -1,15 +1,14 @@
 import { createHash } from 'node:crypto';
-import {
-  ConflictException,
+import { ConflictException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { compare, hash } from 'bcrypt';
-import { AuthRepository } from './auth.repository.js';
-import type { LoginDto } from './dto/login.dto.js';
-import type { RegisterDto } from './dto/register.dto.js';
+import { AuthRepository } from '../auth.repository.js';
+import type { LoginDto } from '../dto/login.dto.js';
+import type { RegisterDto } from '../dto/register.dto.js';
 
 const ACCESS_TOKEN_TTL = '15m';
 const REFRESH_TOKEN_TTL = '30d';

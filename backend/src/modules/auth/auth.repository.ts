@@ -1,11 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
-import { DRIZZLE, type DrizzleClient } from '../database/drizzle.module.js';
+import { DRIZZLE, type DrizzleClient } from '../../database/drizzle.module.js';
 import {
   users,
   type NewUser,
   type User,
-} from '../database/schema/users.schema.js';
+} from '../../database/schema/users.schema.js';
 
 @Injectable()
 export class AuthRepository {

@@ -1,0 +1,63 @@
+@baseUrl = http://localhost:3000/v1
+
+### Register
+# @name register
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "usuario@example.com",
+  "password": "senha123"
+}
+
+### Register - email duplicado (409 esperado)
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "usuario@example.com",
+  "password": "senha123"
+}
+
+### Login
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "usuario@example.com",
+  "password": "senha123"
+}
+
+### Login - credenciais inválidas (401 esperado)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "usuario@example.com",
+  "password": "senha-errada"
+}
+
+### Refresh - usa o refreshToken retornado pelo login acima
+# @name refresh
+POST {{baseUrl}}/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{login.response.body.$.data.refreshToken}}"
+}
+
+### Refresh - reuso do token antigo após rotação (401 esperado, sessão invalidada)
+POST {{baseUrl}}/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{login.response.body.$.data.refreshToken}}"
+}
+
+### Logout - usa o accessToken retornado pelo login acima
+POST {{baseUrl}}/auth/logout
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+### Logout - sem token (401 esperado)
+POST {{baseUrl}}/auth/logout
