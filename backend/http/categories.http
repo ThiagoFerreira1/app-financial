@@ -1,0 +1,115 @@
+@baseUrl = http://localhost:3000/v1
+
+### Login (necessário para pegar o accessToken usado abaixo)
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "usuario@example.com",
+  "password": "senha123"
+}
+
+### Create
+# @name createCategory
+POST {{baseUrl}}/categories
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+{
+  "name": "Alimentação"
+}
+
+### Create - nome duplicado, case-insensitive (409 esperado)
+POST {{baseUrl}}/categories
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+{
+  "name": "alimentação"
+}
+
+### List - sem filtro (comportamento atual, lista tudo)
+GET {{baseUrl}}/categories
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+### List - filtrando por name (substring, case-insensitive, mínimo 3 caracteres)
+GET {{baseUrl}}/categories?name=alim
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+### List - filtro sem nenhuma correspondência (lista vazia esperada)
+GET {{baseUrl}}/categories?name=xyz
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+### List - filtro com menos de 3 caracteres (400 esperado)
+GET {{baseUrl}}/categories?name=ab
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+### Update - usa o id da categoria criada acima
+PATCH {{baseUrl}}/categories/{{createCategory.response.body.$.data.id}}
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+{
+  "name": "Mercado"
+}
+
+### Update - renomear para nome já usado por outra categoria própria (409 esperado)
+PATCH {{baseUrl}}/categories/{{createCategory.response.body.$.data.id}}
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+{
+  "name": "Transporte"
+}
+
+### Delete
+DELETE {{baseUrl}}/categories/{{createCategory.response.body.$.data.id}}
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+### Update - categoria já removida (404 esperado)
+PATCH {{baseUrl}}/categories/{{createCategory.response.body.$.data.id}}
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+{
+  "name": "Qualquer"
+}
+
+### Delete - categoria já removida (404 esperado)
+DELETE {{baseUrl}}/categories/{{createCategory.response.body.$.data.id}}
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+### Register um segundo usuário (para testar isolamento entre usuários abaixo)
+# @name loginOtherUser
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "outro-usuario@example.com",
+  "password": "senha123"
+}
+
+### Update - categoria de outro usuário (404 esperado, não revela que pertence a outro usuário)
+PATCH {{baseUrl}}/categories/{{createCategory.response.body.$.data.id}}
+Content-Type: application/json
+Authorization: Bearer {{loginOtherUser.response.body.$.data.accessToken}}
+
+{
+  "name": "Roubada"
+}
+
+### Delete - categoria de outro usuário (404 esperado)
+DELETE {{baseUrl}}/categories/{{createCategory.response.body.$.data.id}}
+Authorization: Bearer {{loginOtherUser.response.body.$.data.accessToken}}
+
+### Create - sem token (401 esperado)
+POST {{baseUrl}}/categories
+Content-Type: application/json
+
+{
+  "name": "SemToken"
+}
+
+### List - sem token (401 esperado)
+GET {{baseUrl}}/categories

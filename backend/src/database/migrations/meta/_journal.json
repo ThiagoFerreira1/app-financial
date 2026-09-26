@@ -8,6 +8,13 @@
       "when": 1789608292457,
       "tag": "0000_clammy_firebrand",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790384229480,
+      "tag": "0001_redundant_ben_urich",
+      "breakpoints": true
     }
   ]
 }
